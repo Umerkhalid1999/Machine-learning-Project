@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}Content Moderation - ConnectAI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bold">
+                    <i class="fas fa-shield-alt text-primary me-3"></i>
+                    AI Content Moderation
+                </h1>
+                <p class="lead text-muted">
+                    Real-time sentiment analysis and content moderation using machine learning
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Algorithm Info -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-brain text-success me-2"></i>
+                        Model: Real SMS Spam Detection
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><strong>Dataset:</strong> Real SMS Spam Collection</li>
+                                <li><strong>Algorithm:</strong> Multinomial Naive Bayes</li>
+                                <li><strong>Features:</strong> TF-IDF Vectorization</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><strong>Training Data:</strong> 5,574 real SMS messages</li>
+                                <li><strong>Spam Messages:</strong> 747 examples</li>
+                                <li><strong>Ham Messages:</strong> 4,827 examples</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Trained on real-world SMS spam data for accurate content moderation
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Input Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Test Custom Content
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="customText" class="form-label">Enter your text:</label>
+                        <textarea class="form-control" id="customText" rows="4" 
+                            placeholder="Type a social media post to analyze..."></textarea>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button class="btn btn-primary btn-lg" onclick="analyzeCustomText()">
+                            <i class="fas fa-magic me-2"></i>Analyze Content
+                        </button>
+                    </div>
+                    
+                    <div id="customResult" class="mt-4" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demo Posts Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Demo with Sample Posts
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Click the button below to analyze a batch of sample social media posts:</p>
+                    
+                    <div class="text-center mb-4">
+                        <button class="btn btn-success btn-lg" onclick="runDemoAnalysis()">
+                            <i class="fas fa-play me-2"></i>Run Demo Analysis
+                        </button>
+                    </div>
+                    
+                    <div id="demoResults" style="display: none;">
+                        <h6 class="fw-bold mb-3">Analysis Results:</h6>
+                        <div id="demoPostsList"></div>
+                        
+                        <div class="mt-4">
+                            <h6 class="fw-bold">Summary Statistics:</h6>
+                            <div id="demoStats"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-time Performance -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Performance Metrics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="metric">
+                                <h3 class="text-primary mb-0" id="totalAnalyzed">0</h3>
+                                <small class="text-muted">Posts Analyzed</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric">
+                                <h3 class="text-success mb-0" id="avgResponseTime">0ms</h3>
+                                <small class="text-muted">Avg Response Time</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric">
+                                <h3 class="text-warning mb-0" id="moderationActions">0</h3>
+                                <small class="text-muted">Actions Taken</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric">
+                                <h3 class="text-info mb-0" id="avgConfidence">0%</h3>
+                                <small class="text-muted">Avg Confidence</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let analysisCount = 0;
+let totalResponseTime = 0;
+let moderationActions = 0;
+let totalConfidence = 0;
+
+function updateMetrics(responseTime, confidence, action) {
+    analysisCount++;
+    totalResponseTime += responseTime;
+    totalConfidence += confidence;
+    
+    if (action === 'REVIEW' || action === 'BLOCK') {
+        moderationActions++;
+    }
+    
+    document.getElementById('totalAnalyzed').textContent = analysisCount;
+    document.getElementById('avgResponseTime').textContent = Math.round(totalResponseTime / analysisCount) + 'ms';
+    document.getElementById('moderationActions').textContent = moderationActions;
+    document.getElementById('avgConfidence').textContent = Math.round((totalConfidence / analysisCount) * 100) + '%';
+}
+
+function analyzeCustomText() {
+    const text = document.getElementById('customText').value.trim();
+    const resultDiv = document.getElementById('customResult');
+    
+    if (!text) {
+        resultDiv.className = 'alert alert-warning';
+        resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Please enter some text to analyze.';
+        resultDiv.style.display = 'block';
+        return;
+    }
+    
+    // Show loading
+    resultDiv.className = 'alert alert-info';
+    resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyzing content...';
+    resultDiv.style.display = 'block';
+    
+    const startTime = Date.now();
+    
+    // Call API
+    fetch('/api/moderate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({text: text})
+    })
+    .then(response => response.json())
+    .then(data => {
+        const responseTime = Date.now() - startTime;
+        
+        if (data.error) {
+            resultDiv.className = 'alert alert-danger';
+            resultDiv.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>Error: ${data.error}`;
+        } else {
+            updateMetrics(responseTime, data.confidence, data.action);
+            
+            const actionColors = {
+                'APPROVE': 'success',
+                'REVIEW': 'warning', 
+                'BLOCK': 'danger'
+            };
+            
+            const actionIcons = {
+                'APPROVE': 'check-circle',
+                'REVIEW': 'exclamation-triangle',
+                'BLOCK': 'ban'
+            };
+            
+            const color = actionColors[data.action] || 'info';
+            const icon = actionIcons[data.action] || 'info-circle';
+            
+            resultDiv.className = `alert alert-${color}`;
+            resultDiv.innerHTML = `
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6><i class="fas fa-brain me-2"></i>AI Analysis Results:</h6>
+                        <p class="mb-2"><strong>Text:</strong> "${data.text.substring(0, 100)}${data.text.length > 100 ? '...' : ''}"</p>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <small><strong>Sentiment:</strong> <span class="badge bg-secondary">${data.sentiment}</span></small><br>
+                                <small><strong>Confidence:</strong> ${(data.confidence * 100).toFixed(1)}%</small><br>
+                                <small><strong>Response Time:</strong> ${responseTime}ms</small>
+                            </div>
+                            <div class="col-sm-6">
+                                <small><strong>Toxicity Score:</strong> ${(data.toxicity_score * 100).toFixed(1)}%</small><br>
+                                <small><strong>Probabilities:</strong></small><br>
+                                <small>Neg: ${(data.probabilities.negative * 100).toFixed(1)}% | 
+                                      Pos: ${(data.probabilities.positive * 100).toFixed(1)}% | 
+                                      Neu: ${(data.probabilities.neutral * 100).toFixed(1)}%</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h6><i class="fas fa-gavel me-2"></i>Moderation Action:</h6>
+                        <div class="d-flex flex-column align-items-center">
+                            <i class="fas fa-${icon} fa-3x text-${color} mb-2"></i>
+                            <span class="badge bg-${color} fs-6">${data.action}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        resultDiv.className = 'alert alert-danger';
+        resultDiv.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>Error: ${error.message}`;
+    });
+}
+
+function runDemoAnalysis() {
+    const resultsDiv = document.getElementById('demoResults');
+    const postsListDiv = document.getElementById('demoPostsList');
+    const statsDiv = document.getElementById('demoStats');
+    
+    // Show loading
+    postsListDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin me-2"></i>Loading demo posts and analyzing...</div>';
+    resultsDiv.style.display = 'block';
+    
+    // Get demo posts and analyze them
+    fetch('/api/demo-posts')
+    .then(response => response.json())
+    .then(data => {
+        const posts = data.posts;
+        const promises = posts.map(post => 
+            fetch('/api/moderate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: post})
+            }).then(response => response.json())
+        );
+        
+        Promise.all(promises).then(results => {
+            // Display results
+            let html = '';
+            let approveCount = 0, reviewCount = 0, blockCount = 0;
+            let totalConf = 0;
+            
+            results.forEach((result, index) => {
+                if (result.error) return;
+                
+                const actionColors = {
+                    'APPROVE': 'success',
+                    'REVIEW': 'warning', 
+                    'BLOCK': 'danger'
+                };
+                
+                const color = actionColors[result.action] || 'info';
+                
+                html += `
+                    <div class="card mb-2">
+                        <div class="card-body py-2">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <small class="text-muted">Post ${index + 1}:</small>
+                                    <p class="mb-1">"${result.text.substring(0, 80)}${result.text.length > 80 ? '...' : ''}"</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <small>
+                                        <strong>${result.sentiment}</strong> (${(result.confidence * 100).toFixed(0)}%)<br>
+                                        Toxicity: ${(result.toxicity_score * 100).toFixed(0)}%
+                                    </small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <span class="badge bg-${color}">${result.action}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Count actions
+                if (result.action === 'APPROVE') approveCount++;
+                else if (result.action === 'REVIEW') reviewCount++;
+                else if (result.action === 'BLOCK') blockCount++;
+                
+                totalConf += result.confidence;
+            });
+            
+            postsListDiv.innerHTML = html;
+            
+            // Display stats
+            const avgConf = totalConf / results.length;
+            statsDiv.innerHTML = `
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body py-2">
+                                <h5>${approveCount}</h5>
+                                <small>Approved</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body py-2">
+                                <h5>${reviewCount}</h5>
+                                <small>Review</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body py-2">
+                                <h5>${blockCount}</h5>
+                                <small>Blocked</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body py-2">
+                                <h5>${(avgConf * 100).toFixed(0)}%</h5>
+                                <small>Avg Confidence</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    })
+    .catch(error => {
+        postsListDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    });
+}
+
+// Allow Enter key to submit
+document.getElementById('customText').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && e.ctrlKey) {
+        analyzeCustomText();
+    }
+});
+</script>
+{% endblock %} 
